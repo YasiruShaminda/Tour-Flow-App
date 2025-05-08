@@ -87,6 +87,22 @@ def sign_in_with_google():
         st.session_state.user_info = user_info
         st.session_state.logged_in = True
         
+        # Set secrets
+        st.secrets["GOOGLE_CLIENT_ID"] = credentials.client_id
+        st.secrets["GOOGLE_CLIENT_SECRET"] = credentials.client_secret
+        st.secrets["GEMINI_API_KEY"] = "your_default_gemini_api_key"
+        
+        if signed_in:
+            st.success("Successfully signed in!")
+            # Set secrets if not already set
+            if "GOOGLE_CLIENT_ID" not in st.session_state:
+                st.session_state["GOOGLE_CLIENT_ID"] = "your_default_client_id"
+            if "GOOGLE_CLIENT_SECRET" not in st.session_state:
+                st.session_state["GOOGLE_CLIENT_SECRET"] = "your_default_client_secret"
+            if "GEMINI_API_KEY" not in st.session_state:
+                st.session_state["GEMINI_API_KEY"] = "your_default_gemini_api_key"
+            st.experimental_rerun()
+        
         return True
     
     return False
