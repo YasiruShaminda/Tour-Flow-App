@@ -1,0 +1,13 @@
+streamlit==1.30.0
+pandas==2.0.3
+google-auth==2.23.3
+google-auth-oauthlib==1.1.0
+google-api-python-client==2.108.0
+pillow==10.0.1
+streamlit-extras==0.3.4
+streamlit-option-menu==0.3.6
+streamlit-webrtc==0.47.1
+openai==1.3.5
+python-dotenv==1.0.0
+streamlit-card==0.0.61
+google-generativeai==0.3.1 
