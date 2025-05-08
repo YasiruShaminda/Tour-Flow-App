@@ -26,8 +26,8 @@ def create_oauth_flow():
             "client_secret": st.session_state.get("GOOGLE_CLIENT_SECRET", "YOUR_CLIENT_SECRET"),
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uri": "http://localhost:8501/",
-            "javascript_origins": ["http://localhost:8501"]
+            "redirect_uri": "https://tourflow.streamlit.app/",
+            "javascript_origins": ["https://tourflow.streamlit.app"]
         }
     }
     
