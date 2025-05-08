@@ -19,11 +19,29 @@ def check_login_status():
 
 def create_oauth_flow():
     """Create OAuth flow for Google Sign-In"""
-    # Get from session_state instead of env
+    # Get client ID and secret from session state or secrets
+    client_id = st.session_state.get("GOOGLE_CLIENT_ID")
+    client_secret = st.session_state.get("GOOGLE_CLIENT_SECRET")
+    
+    # Check if we have the values in session_state
+    if not client_id or not client_secret:
+        try:
+            # Try to get from secrets
+            client_id = st.secrets.get("GOOGLE_CLIENT_ID")
+            client_secret = st.secrets.get("GOOGLE_CLIENT_SECRET")
+        except:
+            # Fallback to defaults (which won't work but prevent errors)
+            client_id = "YOUR_CLIENT_ID"
+            client_secret = "YOUR_CLIENT_SECRET"
+    
+    # Store in session state for future use
+    st.session_state["GOOGLE_CLIENT_ID"] = client_id
+    st.session_state["GOOGLE_CLIENT_SECRET"] = client_secret
+    
     client_config = {
         "web": {
-            "client_id": st.session_state.get("GOOGLE_CLIENT_ID", "YOUR_CLIENT_ID"),
-            "client_secret": st.session_state.get("GOOGLE_CLIENT_SECRET", "YOUR_CLIENT_SECRET"),
+            "client_id": client_id,
+            "client_secret": client_secret,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
             "redirect_uri": "https://tourflow.streamlit.app/",
@@ -61,49 +79,58 @@ def sign_in_with_google():
     # In a real app, you'd use a more secure method to handle state
     st.session_state.google_auth_state = state
     
-    # Provide link for user to click
-    st.markdown(f"[Sign in with Google]({authorization_url})", unsafe_allow_html=True)
+    # Create a better looking button for Google Sign-In
+    google_btn = """
+    <a href="{}" target="_blank" style="display: inline-block; 
+       background-color: white; color: #444; 
+       border-radius: 5px; border: thin solid #888; box-shadow: 1px 1px 1px grey;
+       white-space: nowrap; height: 40px; padding: 0 15px;">
+      <img width="20px" style="margin-right:8px; margin-top:10px;" 
+           src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" />
+      <span style="position:relative; top:-6px;">Sign in with Google</span>
+    </a>
+    """
+    st.markdown(google_btn.format(authorization_url), unsafe_allow_html=True)
     
-    # For demo purposes, a simplified approach
+    # For demo purposes, a simplified approach to handle the OAuth code
     # In a production app, you'd handle the OAuth callback properly
-    auth_code = st.text_input("Enter the authorization code from the redirect URL:")
+    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+    auth_code = st.text_input("Enter the authorization code from the redirect URL:", 
+                              help="After clicking the button above, copy the code from the URL you're redirected to")
     
     if auth_code:
-        flow.fetch_token(code=auth_code)
-        credentials = flow.credentials
-        
-        # Store credentials in session state
-        st.session_state.credentials = {
-            'token': credentials.token,
-            'refresh_token': credentials.refresh_token,
-            'token_uri': credentials.token_uri,
-            'client_id': credentials.client_id,
-            'client_secret': credentials.client_secret,
-            'scopes': credentials.scopes
-        }
-        
-        # Get user info
-        user_info = get_user_info(credentials)
-        st.session_state.user_info = user_info
-        st.session_state.logged_in = True
-        
-        # Set secrets
-        st.secrets["GOOGLE_CLIENT_ID"] = credentials.client_id
-        st.secrets["GOOGLE_CLIENT_SECRET"] = credentials.client_secret
-        st.secrets["GEMINI_API_KEY"] = "your_default_gemini_api_key"
-        
-        if signed_in:
-            st.success("Successfully signed in!")
-            # Set secrets if not already set
-            if "GOOGLE_CLIENT_ID" not in st.session_state:
-                st.session_state["GOOGLE_CLIENT_ID"] = "your_default_client_id"
-            if "GOOGLE_CLIENT_SECRET" not in st.session_state:
-                st.session_state["GOOGLE_CLIENT_SECRET"] = "your_default_client_secret"
+        try:
+            flow.fetch_token(code=auth_code)
+            credentials = flow.credentials
+            
+            # Store credentials in session state
+            st.session_state.credentials = {
+                'token': credentials.token,
+                'refresh_token': credentials.refresh_token,
+                'token_uri': credentials.token_uri,
+                'client_id': credentials.client_id,
+                'client_secret': credentials.client_secret,
+                'scopes': credentials.scopes
+            }
+            
+            # Get user info
+            user_info = get_user_info(credentials)
+            st.session_state.user_info = user_info
+            st.session_state.logged_in = True
+            
+            # Make sure we have the Gemini API key in the session state
+            # If it's not already there, try to get it from secrets
             if "GEMINI_API_KEY" not in st.session_state:
-                st.session_state["GEMINI_API_KEY"] = "your_default_gemini_api_key"
-            st.experimental_rerun()
-        
-        return True
+                try:
+                    st.session_state["GEMINI_API_KEY"] = st.secrets.get("GEMINI_API_KEY", "")
+                except:
+                    # If not in secrets, it will be requested in the setup page
+                    pass
+            
+            return True
+        except Exception as e:
+            st.error(f"Error authenticating: {str(e)}")
+            return False
     
     return False
 
